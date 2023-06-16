@@ -8,6 +8,7 @@ import './App.css';
  */
 interface IState {
   data: ServerRespond[],
+  showGraph: boolean,
 }
 
 /**
@@ -22,6 +23,7 @@ class App extends Component<{}, IState> {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
+      showGraph: false,
     };
   }
 
@@ -29,18 +31,32 @@ class App extends Component<{}, IState> {
    * Render Graph react component with state.data parse as property data
    */
   renderGraph() {
-    return (<Graph data={this.state.data}/>)
+    if (this.state.showGraph === true) {
+      return (<Graph data={this.state.data} />)
+    }
   }
 
   /**
    * Get new data from server and update the state with the new data
    */
   getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
-      // Update the state by creating a new array of data that consists of
-      // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+    // Count will count how many times the getData method is invoked and clear our setInterval once it reaches a threshold set (current at 10)
+    let count = 0;
+    const intervalId = setInterval(() => {
+      DataStreamer.getData((serverResponds: ServerRespond[]) => {
+        // Update the state by creating a new array of data that consists of
+        // Previous data in the state and the new data from server
+        // Here when we start getting our data, we also will set our showGraph state to true (so we can show the graph in the client)
+        this.setState({ data: serverResponds, showGraph: true });
+      });
+
+      // Clears the interval set once count reaches 10
+      count++;
+      if (count > 100) {
+        clearInterval(intervalId);
+      }
+    }, 100);
+
   }
 
   /**
